@@ -18,7 +18,7 @@ options:\n\
   --quality min-max don't save below min, use fewer colors below max (0-100)\n\
   --speed N         speed/quality trade-off. 1=slow, 4=default, 11=fast & rough\n\
   --nofs            disable Floyd-Steinberg dithering\n\
-  --trans-color		HEX RGB color (e.g. ff00ff or #f0f) for transparent palette entry\n\
+  --trans-color		HEX RGB color (e.g. ff00ff or #f0f) for transparent palette entry (default 000000)\n\
   --posterize N     output lower-precision color (e.g. for ARGB4444 output)\n\
   --strip           remove optional metadata (default on Mac)\n\
   --verbose         print status messages (synonym: -v)\n\

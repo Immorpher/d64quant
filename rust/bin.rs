@@ -200,7 +200,7 @@ fn run() -> ffi::pngquant_error {
         print_help: m.opt_present("h"),
         print_version: m.opt_present("V"),
         verbose: m.opt_present("v"),
-        has_trans_color: trans_color.is_some(),
+        has_trans_color: true, // default to pure black unless --trans-color is given
         trans_color: trans_color.unwrap_or([0; 3]),
 
         fixed_palette_image: ptr::null_mut(),
