@@ -67,5 +67,7 @@ pub struct pngquant_options {
     pub missing_arguments: bool,
     pub verbose: bool,
     pub has_trans_color: bool,
+    pub global_palette: bool,
     pub trans_color: [u8; 3],
+    pub global_result: *mut c_void,
 }

@@ -19,6 +19,7 @@ options:\n\
   --speed N         speed/quality trade-off. 1=slow, 4=default, 11=fast & rough\n\
   --nofs            disable Floyd-Steinberg dithering\n\
   --trans-color		HEX RGB color (e.g. ff00ff or #f0f) for transparent palette entry (default 000000)\n\
+  --global-palette  build one palette from all input images (use --colors N for its size)\n\
   --posterize N     output lower-precision color (e.g. for ARGB4444 output)\n\
   --strip           remove optional metadata (default on Mac)\n\
   --verbose         print status messages (synonym: -v)\n\
@@ -360,7 +361,48 @@ pngquant_error pngquant_main_internal(struct pngquant_options *options, liq_attr
     unsigned int error_count=0, skipped_count=0, file_count=0;
     pngquant_error latest_error=SUCCESS;
 
-    #pragma omp parallel for \
+    if (options->global_palette) {
+        // Pass 1: gather colors of every input image into one histogram.
+        liq_histogram *hist = liq_histogram_create(liq);
+        if (!hist) {
+            return OUT_OF_MEMORY_ERROR;
+        }
+        unsigned int added = 0;
+        for(unsigned int i=0; i < options->num_files; i++) {
+            png24_image tmp = {.width=0};
+            liq_image *img = NULL;
+            // unreadable files are skipped here; they will be reported again in the main loop
+            if (SUCCESS != read_image(liq, options->files[i], false, &tmp, &img, false, options->strip, false)) {
+                if (img) liq_image_destroy(img);
+                rwpng_free_image24(&tmp);
+                continue;
+            }
+            if (LIQ_OK == liq_histogram_add_image(hist, liq, img)) {
+                added++;
+            }
+            liq_image_destroy(img);
+            rwpng_free_image24(&tmp);
+        }
+        if (!added) {
+            liq_histogram_destroy(hist);
+            fputs("  error: no readable images to build a global palette from\n", stderr);
+            return READ_ERROR;
+        }
+        liq_result *global = NULL;
+        liq_error gerr = liq_histogram_quantize(hist, liq, &global);
+        liq_histogram_destroy(hist);
+        if (LIQ_OK != gerr) {
+            return LIQ_QUALITY_TOO_LOW == gerr ? TOO_LOW_QUALITY : INVALID_ARGUMENT;
+        }
+        liq_set_output_gamma(global, 0.45455);
+        liq_set_dithering_level(global, options->floyd);
+        options->global_result = global;
+        verbose_printf(liq, options, "built global palette of %u colors from %u image%s",
+                       liq_get_palette(global)->count, added, added == 1 ? "" : "s");
+    }
+
+    // a shared palette result is not safe to remap with from several threads at once
+    #pragma omp parallel for if(!options->global_palette) \
         schedule(static, 1) reduction(+:skipped_count) reduction(+:error_count) reduction(+:file_count) shared(latest_error)
     for(int i=0; i < options->num_files; i++) {
         const char *filename = options->using_stdin ? "stdin" : options->files[i];
@@ -429,6 +471,7 @@ pngquant_error pngquant_main_internal(struct pngquant_options *options, liq_attr
     }
 
     if (options->fixed_palette_image) liq_image_destroy(options->fixed_palette_image);
+    if (options->global_result) liq_result_destroy(options->global_result);
 
     return latest_error;
 }
@@ -468,8 +511,14 @@ static pngquant_error pngquant_file_internal(const char *filename, const char *o
         }
 
         // when using image as source of a fixed palette the palette is extracted using regular quantization
-        liq_result *remap;
-        liq_error remap_error = liq_image_quantize(options->fixed_palette_image ? options->fixed_palette_image : input_image, liq, &remap);
+        liq_result *remap = NULL;
+        liq_error remap_error;
+        if (options->global_result) {
+            remap = options->global_result; // shared palette from all images
+            remap_error = LIQ_OK;
+        } else {
+            remap_error = liq_image_quantize(options->fixed_palette_image ? options->fixed_palette_image : input_image, liq, &remap);
+        }
 
         if (LIQ_OK == remap_error) {
 
@@ -492,7 +541,7 @@ static pngquant_error pngquant_file_internal(const char *filename, const char *o
                     verbose_printf(liq, options, "  mapped image to new colors...MSE=%.3f (Q=%d)", palette_error, quality_percent);
                 }
             }
-            liq_result_destroy(remap);
+            if (!options->global_result) liq_result_destroy(remap);
         } else if (LIQ_QUALITY_TOO_LOW == remap_error) {
             retval = TOO_LOW_QUALITY;
         } else {

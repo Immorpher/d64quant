@@ -112,6 +112,7 @@ fn run() -> ffi::pngquant_error {
     opts.optflag("", "nofs", "");
     opts.optflag("", "iebug", "");
     opts.optflag("", "transbug", "");
+    opts.optflag("", "global-palette", "");
     opts.optflag("", "skip-if-larger", "");
     opts.optflag("", "strip", "");
     opts.optflag("V", "version", "");
@@ -200,6 +201,8 @@ fn run() -> ffi::pngquant_error {
         print_help: m.opt_present("h"),
         print_version: m.opt_present("V"),
         verbose: m.opt_present("v"),
+        global_palette: m.opt_present("global-palette"),
+        global_result: ptr::null_mut(),
         has_trans_color: true, // default to pure black unless --trans-color is given
         trans_color: trans_color.unwrap_or([0; 3]),
 
@@ -223,6 +226,16 @@ fn run() -> ffi::pngquant_error {
         print_full_version(&mut io::stderr(), unsafe { pngquant_c_stderr() });
         print_usage(&mut io::stderr());
         return MISSING_ARGUMENT;
+    }
+
+    if options.global_palette && options.using_stdin {
+        eprintln!("--global-palette needs input files; it can't be used with stdin.");
+        return INVALID_ARGUMENT;
+    }
+
+    if options.global_palette && !options.map_file.is_null() {
+        eprintln!("--global-palette and --map can't be used at the same time");
+        return INVALID_ARGUMENT;
     }
 
     if options.print_help {

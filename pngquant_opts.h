@@ -21,7 +21,9 @@ struct pngquant_options {
         print_help, print_version, missing_arguments,
         verbose;
     bool has_trans_color;
+    bool global_palette; /* build one palette from all input images */
     unsigned char trans_color[3]; /* r,g,b used for fully transparent palette entries */
+    liq_result *global_result; /* internal: shared palette when global_palette is set */
 };
 
 pngquant_error pngquant_parse_options(int argc, char *argv[], struct pngquant_options *options);
