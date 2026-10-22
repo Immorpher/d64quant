@@ -20,6 +20,8 @@ struct pngquant_options {
         strip, iebug, last_index_transparent,
         print_help, print_version, missing_arguments,
         verbose;
+    bool has_trans_color;
+    unsigned char trans_color[3]; /* r,g,b used for fully transparent palette entries */
 };
 
 pngquant_error pngquant_parse_options(int argc, char *argv[], struct pngquant_options *options);

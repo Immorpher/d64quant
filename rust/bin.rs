@@ -25,6 +25,24 @@ mod ffi;
 use crate::ffi::*;
 use crate::ffi::pngquant_error::*;
 
+/// Parses "RRGGBB", "#RRGGBB", "0xRRGGBB" or the short forms "RGB"/"#RGB".
+fn parse_hex_color(s: &str) -> Option<[u8; 3]> {
+    let s = s.trim();
+    let s = s.strip_prefix('#')
+        .or_else(|| s.strip_prefix("0x"))
+        .or_else(|| s.strip_prefix("0X"))
+        .unwrap_or(s);
+    if !s.is_ascii() || !s.bytes().all(|b| b.is_ascii_hexdigit()) {
+        return None;
+    }
+    let v = |i: usize, n: usize| u8::from_str_radix(&s[i..i + n], 16).ok();
+    match s.len() {
+        6 => Some([v(0, 2)?, v(2, 2)?, v(4, 2)?]),
+        3 => Some([v(0, 1)? * 17, v(1, 1)? * 17, v(2, 1)? * 17]),
+        _ => None,
+    }
+}
+
 fn unwrap_ptr(opt: Option<&CString>) -> *const c_char {
     opt.map_or(ptr::null(), |c| c.as_ptr())
 }
@@ -105,6 +123,7 @@ fn run() -> ffi::pngquant_error {
     opts.optopt("", "posterize", "0", "");
     opts.optopt("", "map", "png", "");
     opts.optopt("", "colors", "0", "");
+    opts.optopt("", "trans-color", "RRGGBB", "");
 
     let args: Vec<_> = wild::args().skip(1).collect();
     let has_some_explicit_args = !args.is_empty();
@@ -115,6 +134,17 @@ fn run() -> ffi::pngquant_error {
             print_usage(&mut io::stderr());
             return MISSING_ARGUMENT;
         },
+    };
+
+    let trans_color = match m.opt_str("trans-color") {
+        Some(s) => match parse_hex_color(&s) {
+            Some(c) => Some(c),
+            None => {
+                eprintln!("--trans-color must be a hexadecimal RGB color like ff00ff, #ff00ff or #f0f.");
+                return INVALID_ARGUMENT;
+            },
+        },
+        None => None,
     };
 
     let posterize = m.opt_str("posterize").and_then(|p| p.parse().ok()).unwrap_or(0);
@@ -170,6 +200,8 @@ fn run() -> ffi::pngquant_error {
         print_help: m.opt_present("h"),
         print_version: m.opt_present("V"),
         verbose: m.opt_present("v"),
+        has_trans_color: trans_color.is_some(),
+        trans_color: trans_color.unwrap_or([0; 3]),
 
         fixed_palette_image: ptr::null_mut(),
         log_callback: None,

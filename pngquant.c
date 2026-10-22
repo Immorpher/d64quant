@@ -18,6 +18,7 @@ options:\n\
   --quality min-max don't save below min, use fewer colors below max (0-100)\n\
   --speed N         speed/quality trade-off. 1=slow, 4=default, 11=fast & rough\n\
   --nofs            disable Floyd-Steinberg dithering\n\
+  --trans-color		HEX RGB color (e.g. ff00ff or #f0f) for transparent palette entry\n\
   --posterize N     output lower-precision color (e.g. for ARGB4444 output)\n\
   --strip           remove optional metadata (default on Mac)\n\
   --verbose         print status messages (synonym: -v)\n\
@@ -61,7 +62,7 @@ use --force to overwrite. See man page for full list of options.\n";
 char *PNGQUANT_VERSION = LIQ_VERSION_STRING " (January 2022)";
 
 static pngquant_error prepare_output_image(liq_result *result, liq_image *input_image, rwpng_color_transform tag, png8_image *output_image);
-static void set_palette(liq_result *result, png8_image *output_image);
+static void set_palette(liq_result *result, png8_image *output_image, const struct pngquant_options *options);
 static pngquant_error read_image(liq_attr *options, const char *filename, int using_stdin, png24_image *input_image_p, liq_image **liq_image_p, bool keep_input_pixels, bool strip, bool verbose);
 static pngquant_error write_image(png8_image *output_image, png24_image *output_image24, const char *outname, struct pngquant_options *options, liq_attr *liq);
 static char *add_filename_extension(const char *filename, const char *newext);
@@ -483,7 +484,7 @@ static pngquant_error pngquant_file_internal(const char *filename, const char *o
                     retval = OUT_OF_MEMORY_ERROR;
                 }
 
-                set_palette(remap, &output_image);
+                set_palette(remap, &output_image, options);
 
                 double palette_error = liq_get_quantization_error(remap);
                 if (palette_error >= 0) {
@@ -538,7 +539,7 @@ static pngquant_error pngquant_file_internal(const char *filename, const char *o
     return retval;
 }
 
-static void set_palette(liq_result *result, png8_image *output_image)
+static void set_palette(liq_result *result, png8_image *output_image, const struct pngquant_options *options)
 {
     const liq_palette *palette = liq_get_palette(result);
 
@@ -546,6 +547,11 @@ static void set_palette(liq_result *result, png8_image *output_image)
     for(unsigned int i=0; i < palette->count; i++) {
         const liq_color px = palette->entries[i];
         output_image->palette[i] = (rwpng_rgba){.r=px.r, .g=px.g, .b=px.b, .a=px.a};
+        if (options->has_trans_color && px.a == 0) {
+            output_image->palette[i].r = options->trans_color[0];
+            output_image->palette[i].g = options->trans_color[1];
+            output_image->palette[i].b = options->trans_color[2];
+        }
     }
 }
 

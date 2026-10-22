@@ -89,6 +89,16 @@ will make almost-opaque pixels fully opaque and will reduce amount of semi-trans
 .Ql -ie-or8.png .
 .It Fl Fl strip
 Remove optional chunks (metadata) from PNG files.
+.It Fl Fl trans-color Ar RRGGBB
+Sets the RGB color stored in the palette for fully transparent entries.
+Accepts hexadecimal such as
+.Li ff00ff ,
+.Li #ff00ff
+or the short form
+.Li #f0f .
+Visible pixels are not affected. Quote the value if your shell treats
+.Li #
+specially.
 .It Fl Fl transbug
 Workaround for readers that expect fully transparent color to be the last entry in the palette.
 .It Fl v , Fl Fl verbose
