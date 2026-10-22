@@ -113,6 +113,7 @@ fn run() -> ffi::pngquant_error {
     opts.optflag("", "iebug", "");
     opts.optflag("", "transbug", "");
     opts.optflag("", "global-palette", "");
+    opts.optflagopt("", "doompal", "file", "");
     opts.optflag("", "skip-if-larger", "");
     opts.optflag("", "strip", "");
     opts.optflag("V", "version", "");
@@ -147,6 +148,9 @@ fn run() -> ffi::pngquant_error {
         },
         None => None,
     };
+
+    let doompal = m.opt_present("doompal");
+    let doompal_path = m.opt_str("doompal").and_then(|s| CString::new(s).ok());
 
     let posterize = m.opt_str("posterize").and_then(|p| p.parse().ok()).unwrap_or(0);
     let floyd = m.opt_str("floyd").and_then(|p| p.parse().ok()).unwrap_or(1.);
@@ -203,6 +207,8 @@ fn run() -> ffi::pngquant_error {
         verbose: m.opt_present("v"),
         global_palette: m.opt_present("global-palette"),
         global_result: ptr::null_mut(),
+        doompal,
+        doompal_path: unwrap_ptr(doompal_path.as_ref()),
         has_trans_color: true, // default to pure black unless --trans-color is given
         trans_color: trans_color.unwrap_or([0; 3]),
 
@@ -236,6 +242,17 @@ fn run() -> ffi::pngquant_error {
     if options.global_palette && !options.map_file.is_null() {
         eprintln!("--global-palette and --map can't be used at the same time");
         return INVALID_ARGUMENT;
+    }
+
+    if options.doompal && !options.global_palette {
+        if options.using_stdout {
+            eprintln!("--doompal can't be used when writing to stdout.");
+            return INVALID_ARGUMENT;
+        }
+        if !options.doompal_path.is_null() && options.num_files != 1 {
+            eprintln!("--doompal=file can only be used with a single input file (or with --global-palette). Without a file name, a .pal is written next to each output.");
+            return INVALID_ARGUMENT;
+        }
     }
 
     if options.print_help {

@@ -20,6 +20,7 @@ options:\n\
   --nofs            disable Floyd-Steinberg dithering\n\
   --trans-color		HEX RGB color (e.g. ff00ff or #f0f) for transparent palette entry (default 000000)\n\
   --global-palette  build one palette from all input images (use --colors N for its size)\n\
+  --doompal[=file]  also save the palette as a raw 768-byte Doom palette (.pal)\n\
   --posterize N     output lower-precision color (e.g. for ARGB4444 output)\n\
   --strip           remove optional metadata (default on Mac)\n\
   --verbose         print status messages (synonym: -v)\n\
@@ -64,6 +65,7 @@ char *PNGQUANT_VERSION = LIQ_VERSION_STRING " (January 2022)";
 
 static pngquant_error prepare_output_image(liq_result *result, liq_image *input_image, rwpng_color_transform tag, png8_image *output_image);
 static void set_palette(liq_result *result, png8_image *output_image, const struct pngquant_options *options);
+static bool write_doom_palette(const rwpng_rgba *entries, unsigned int count, const char *path);
 static pngquant_error read_image(liq_attr *options, const char *filename, int using_stdin, png24_image *input_image_p, liq_image **liq_image_p, bool keep_input_pixels, bool strip, bool verbose);
 static pngquant_error write_image(png8_image *output_image, png24_image *output_image24, const char *outname, struct pngquant_options *options, liq_attr *liq);
 static char *add_filename_extension(const char *filename, const char *newext);
@@ -397,6 +399,41 @@ pngquant_error pngquant_main_internal(struct pngquant_options *options, liq_attr
         liq_set_output_gamma(global, 0.45455);
         liq_set_dithering_level(global, options->floyd);
         options->global_result = global;
+        if (options->doompal) {
+            // one shared palette file: explicit path, or DOOMPAL.pal next to the first input
+            const liq_palette *gp = liq_get_palette(global);
+            rwpng_rgba gpal[256];
+            unsigned int gcount = gp->count > 256 ? 256 : gp->count;
+            for(unsigned int i=0; i < gcount; i++) {
+                gpal[i] = (rwpng_rgba){.r=gp->entries[i].r, .g=gp->entries[i].g, .b=gp->entries[i].b, .a=gp->entries[i].a};
+                if (options->has_trans_color && gp->entries[i].a == 0) {
+                    gpal[i].r = options->trans_color[0];
+                    gpal[i].g = options->trans_color[1];
+                    gpal[i].b = options->trans_color[2];
+                }
+            }
+            const char *palpath = options->doompal_path;
+            char *palpath_free = NULL;
+            if (!palpath) {
+                const char *first = options->files[0];
+                const char *slash = strrchr(first, '/');
+                const char *bslash = strrchr(first, '\\');
+                if (bslash && (!slash || bslash > slash)) slash = bslash;
+                size_t dirlen = slash ? (size_t)(slash - first) + 1 : 0;
+                palpath_free = malloc(dirlen + sizeof("DOOMPAL.pal"));
+                if (palpath_free) {
+                    memcpy(palpath_free, first, dirlen);
+                    strcpy(palpath_free + dirlen, "DOOMPAL.pal");
+                    palpath = palpath_free;
+                }
+            }
+            if (!palpath || !write_doom_palette(gpal, gcount, palpath)) {
+                free(palpath_free);
+                return CANT_WRITE_ERROR;
+            }
+            verbose_printf(liq, options, "wrote Doom palette %s", palpath);
+            free(palpath_free);
+        }
         verbose_printf(liq, options, "built global palette of %u colors from %u image%s",
                        liq_get_palette(global)->count, added, added == 1 ? "" : "s");
     }
@@ -564,6 +601,23 @@ static pngquant_error pngquant_file_internal(const char *filename, const char *o
         output_image.chunks = input_image_rwpng.chunks; input_image_rwpng.chunks = NULL;
         retval = write_image(&output_image, NULL, outname, options, liq);
 
+        if (SUCCESS == retval && options->doompal && !options->global_result) {
+            // one palette file per image, next to the output: name.pal
+            const char *palpath = options->doompal_path;
+            char *palpath_free = NULL;
+            if (!palpath && outname) {
+                palpath = palpath_free = add_filename_extension(outname, ".pal");
+            }
+            if (palpath) {
+                if (write_doom_palette(output_image.palette, output_image.num_palette, palpath)) {
+                    verbose_printf(liq, options, "  wrote Doom palette %s", palpath);
+                } else {
+                    retval = CANT_WRITE_ERROR;
+                }
+            }
+            free(palpath_free);
+        }
+
         if (TOO_LARGE_FILE == retval) {
             verbose_printf(liq, options, "  file exceeded expected size of %luKB", (unsigned long)output_image.maximum_file_size/1024UL);
         }
@@ -586,6 +640,30 @@ static pngquant_error pngquant_file_internal(const char *filename, const char *o
     rwpng_free_image8(&output_image);
 
     return retval;
+}
+
+/* Raw Doom palette: 256 x (R,G,B) = 768 bytes, same layout as one palette of a PLAYPAL lump.
+   Unused entries are black. Fully transparent entries already carry the --trans-color RGB. */
+static bool write_doom_palette(const rwpng_rgba *entries, unsigned int count, const char *path)
+{
+    unsigned char raw[768] = {0};
+    for(unsigned int i=0; i < count && i < 256; i++) {
+        raw[i*3] = entries[i].r;
+        raw[i*3+1] = entries[i].g;
+        raw[i*3+2] = entries[i].b;
+    }
+
+    FILE *f = fopen(path, "wb");
+    if (!f) {
+        fprintf(stderr, "  error: cannot write Doom palette %s\n", path);
+        return false;
+    }
+    bool ok = fwrite(raw, 1, sizeof(raw), f) == sizeof(raw);
+    if (fclose(f) != 0) ok = false;
+    if (!ok) {
+        fprintf(stderr, "  error: failed writing Doom palette %s\n", path);
+    }
+    return ok;
 }
 
 static void set_palette(liq_result *result, png8_image *output_image, const struct pngquant_options *options)

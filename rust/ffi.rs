@@ -70,4 +70,6 @@ pub struct pngquant_options {
     pub global_palette: bool,
     pub trans_color: [u8; 3],
     pub global_result: *mut c_void,
+    pub doompal_path: *const c_char,
+    pub doompal: bool,
 }

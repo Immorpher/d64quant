@@ -24,6 +24,8 @@ struct pngquant_options {
     bool global_palette; /* build one palette from all input images */
     unsigned char trans_color[3]; /* r,g,b used for fully transparent palette entries */
     liq_result *global_result; /* internal: shared palette when global_palette is set */
+    const char *doompal_path; /* optional explicit path for the Doom palette file */
+    bool doompal; /* also write the palette as a raw 768-byte Doom (PLAYPAL-style) palette */
 };
 
 pngquant_error pngquant_parse_options(int argc, char *argv[], struct pngquant_options *options);
