@@ -1,7 +1,7 @@
 .Dd 2013-02-25
-.Dt pngquant 1
+.Dt d64quant 1
 .Sh NAME
-.Nm pngquant
+.Nm d64quant
 .Nd PNG converter and lossy image compressor
 .Sh SYNOPSIS
 .Nm
@@ -74,10 +74,10 @@ will use the least amount of colors required to meet or exceed the
 .Va max
 quality. If conversion results in quality below the
 .Va min
-quality the image won't be saved (or if outputting to stdin, 24-bit original will be output) and pngquant will exit with status code
+quality the image won't be saved (or if outputting to stdin, 24-bit original will be output) and d64quant will exit with status code
 .Er 99 .
 .It Fl Fl skip-if-larger
-If conversion results in a file larger than the original, the image won't be saved and pngquant will exit with status code
+If conversion results in a file larger than the original, the image won't be saved and d64quant will exit with status code
 .Er 98 .
 Additionally, file size gain must be greater than the amount of quality lost. If quality drops by 50%, it will expect 50% file size reduction to consider it worthwhile.
 .It Fl Fl posterize Ar bits

@@ -1,5 +1,5 @@
 [package]
-name = "pngquant"
+name = "d64quant"
 version = "3.0.4"
 authors = ["Kornel Lesiński <kornel@pngquant.org>"]
 description = "Convert 24/32-bit PNG images to efficient 8-bit format with alpha channel"
@@ -16,7 +16,7 @@ edition = "2021"
 rust-version = "1.67"
 
 [[bin]]
-name = "pngquant"
+name = "d64quant"
 path = "rust/bin.rs"
 
 [build-dependencies]

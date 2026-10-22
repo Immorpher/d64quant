@@ -8,8 +8,8 @@
 */
 
 char *PNGQUANT_USAGE = "\
-usage:  pngquant [options] [ncolors] -- pngfile [pngfile ...]\n\
-        pngquant [options] [ncolors] - >stdout <stdin\n\n\
+usage:  d64quant [options] [ncolors] -- pngfile [pngfile ...]\n\
+        d64quant [options] [ncolors] - >stdout <stdin\n\n\
 options:\n\
   --force           overwrite existing output files (synonym: -f)\n\
   --skip-if-larger  only save converted files if they're smaller than original\n\
@@ -155,7 +155,7 @@ FILE *pngquant_c_stdout() {
 
 static void print_full_version(FILE *fd)
 {
-    fprintf(fd, "pngquant, %s, by Kornel Lesinski, Greg Roelofs.\n", PNGQUANT_VERSION);
+    fprintf(fd, "d64quant (based on pngquant), %s, by Kornel Lesinski, Greg Roelofs.\n", PNGQUANT_VERSION);
     pngquant_internal_print_config(fd);
     rwpng_version_info(fd);
     fputs("\n", fd);

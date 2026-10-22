@@ -58,11 +58,11 @@ void rwpng_version_info(FILE *fp)
 #if PNG_LIBPNG_VER < 10600
     if (strcmp(pngver, "1.3.") < 0) {
         fputs("\nWARNING: Your version of libpng is outdated and may produce corrupted files.\n"
-              "Please recompile pngquant with the current version of libpng (1.6 or later).\n", fp);
+              "Please recompile d64quant with the current version of libpng (1.6 or later).\n", fp);
     } else if (strcmp(pngver, "1.6.") < 0) {
         #if defined(PNG_UNKNOWN_CHUNKS_SUPPORTED)
         fputs("\nWARNING: Your version of libpng is old and has buggy support for custom chunks.\n"
-              "Please recompile pngquant with the current version of libpng (1.6 or later).\n", fp);
+              "Please recompile d64quant with the current version of libpng (1.6 or later).\n", fp);
         #endif
     }
 #endif
@@ -242,7 +242,7 @@ static pngquant_error rwpng_read_image24_libpng(FILE *infile, png24_image *mainp
         png_set_expand(png_ptr);
         png_set_filler(png_ptr, 65535L, PNG_FILLER_AFTER);
 #else
-        fprintf(stderr, "pngquant readpng:  image is neither RGBA nor GA\n");
+        fprintf(stderr, "d64quant readpng:  image is neither RGBA nor GA\n");
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         mainprog_ptr->retval = WRONG_INPUT_COLOR_TYPE;
         return mainprog_ptr->retval;
@@ -268,7 +268,7 @@ static pngquant_error rwpng_read_image24_libpng(FILE *infile, png24_image *mainp
             mainprog_ptr->input_color = RWPNG_GAMA_ONLY;
             mainprog_ptr->output_color = RWPNG_GAMA_ONLY;
         } else {
-            fprintf(stderr, "pngquant readpng:  ignored out-of-range gamma %f\n", gamma);
+            fprintf(stderr, "d64quant readpng:  ignored out-of-range gamma %f\n", gamma);
             mainprog_ptr->input_color = RWPNG_NONE;
             mainprog_ptr->output_color = RWPNG_NONE;
             gamma = 0.45455;
@@ -292,7 +292,7 @@ static pngquant_error rwpng_read_image24_libpng(FILE *infile, png24_image *mainp
     }
 
     if ((mainprog_ptr->rgba_data = malloc(rowbytes * mainprog_ptr->height)) == NULL) {
-        fprintf(stderr, "pngquant readpng:  unable to allocate image data\n");
+        fprintf(stderr, "d64quant readpng:  unable to allocate image data\n");
         png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
         return PNG_OUT_OF_MEMORY_ERROR;
     }

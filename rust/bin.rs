@@ -48,7 +48,7 @@ fn unwrap_ptr(opt: Option<&CString>) -> *const c_char {
 }
 
 fn print_full_version(fd: &mut dyn io::Write, c_fd: *mut FILE) {
-    let _ = writeln!(fd, "pngquant, {} (Rust), by Kornel Lesinski, Greg Roelofs.", env!("CARGO_PKG_VERSION"));
+    let _ = writeln!(fd, "d64quant (based on pngquant), {} (Rust), by Kornel Lesinski, Greg Roelofs.", env!("CARGO_PKG_VERSION"));
     let _ = fd.flush();
     unsafe{pngquant_internal_print_config(c_fd);}
     let _ = writeln!(fd);
