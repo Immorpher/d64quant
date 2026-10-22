@@ -1,6 +1,6 @@
 # d64quant
 
-d64quant is a PNG palette quantizer for graphics with features for Doom 64. It is based on [pngquant](https://pngquant.org), a PNG compressor that significantly reduces file sizes by converting images to a more efficient 8-bit PNG format *with alpha channel* (often 60-80% smaller than 24/32-bit PNG files). Compressed images are fully standards-compliant and are supported by all web browsers and operating systems.
+d64quant is a PNG palette quantizer for graphics with features for [Doom 64](https://www.doom64.com/). It is based on [pngquant](https://pngquant.org), a PNG compressor that significantly reduces file sizes by converting images to a more efficient 8-bit PNG format *with alpha channel* (often 60-80% smaller than 24/32-bit PNG files). Compressed images are fully standards-compliant and are supported by all web browsers and operating systems.
 
 d64quant adds a configurable color for transparent palette entries, a palette shared between many images, and export of the palette in Doom format. The original project is on [GitHub](https://github.com/kornelski/pngquant). The compression engine is also available [as an embeddable library](https://github.com/ImageOptim/libimagequant).
 
@@ -101,7 +101,7 @@ You will need to have a Rust toolchain and the C++ build environments installed 
 - Rust: Download and run the installer from [Rustup](https://rustup.rs/) to install Rust 1.70 or later.
 - Visual Studio Build Tools: Install the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (or Visual Studio Community). During setup, ensure that the Desktop development with C++ workload is checked, and that the Windows 10 or 11 SDK option is enabled.
 
-When you have the code downloaded, open Windows PowerShell or command line in the main code directory. Then use the command "cargo build --release" to compile the code.
+When you have the code downloaded, and the prerequisites installed you can run the build.bat to compile the program to the release directory. Or you can open Windows PowerShell or command line in the main code directory. Then use the command "cargo build --release" to compile the code manually.
 
 ## License
 

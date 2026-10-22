@@ -13,3 +13,4 @@ config.mk
 test/test
 target/
 *.lock
+release/d64quant.exe
